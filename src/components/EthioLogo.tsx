@@ -3,6 +3,7 @@ import React from 'react';
 interface EthioLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showWordmark?: boolean;
+  wordmarkText?: string;
   accentColor?: string; // defaults to Signal Blue #3D5AFE
   badgeBgColor?: string; // defaults to #000000
   textColor?: string;
@@ -12,6 +13,7 @@ interface EthioLogoProps {
 export const EthioLogo: React.FC<EthioLogoProps> = ({
   size = 'md',
   showWordmark = true,
+  wordmarkText = 'EDA Invoicing',
   accentColor = '#3D5AFE',
   badgeBgColor = '#000000',
   textColor,
@@ -100,7 +102,7 @@ export const EthioLogo: React.FC<EthioLogoProps> = ({
             textColor ? textColor : 'text-current'
           }`}
         >
-          Ethio Design
+          {wordmarkText}
         </span>
       )}
     </div>

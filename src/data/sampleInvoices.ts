@@ -8,7 +8,7 @@ export const DEFAULT_INVOICE: InvoiceData = {
   currency: 'USD',
   status: 'PENDING',
   agency: {
-    name: 'Ethio Design',
+    name: 'EDA Invoicing (Ethio Design)',
     tagline: 'Modern Digital Experiences & Brand Engineering',
     email: 'billing@ethiodesign.com',
     phone: '+251 91 123 4567',
@@ -70,7 +70,13 @@ export const DEFAULT_INVOICE: InvoiceData = {
     iban: 'ET21CBET0000100028495829',
     telebirrNumber: '+251 91 123 4567 (Merchant ID: ETHDES)',
     paymentTerms: 'Payment due within 30 days of issue date. Late invoices subject to 1.5% monthly interest.',
-    notes: 'Thank you for partnering with Ethio Design. All code and Figma source files transfer upon settlement.',
+    notes: 'Thank you for partnering with EDA Invoicing. All code and Figma source files transfer upon settlement.',
+    qrPayment: {
+      enabled: true,
+      provider: 'stripe',
+      accountOrUrl: 'https://buy.stripe.com/eda_checkout_apex',
+      note: 'Instant checkout with Credit Card or Apple Pay',
+    },
   },
   customization: {
     template: 'ethio-tech',
@@ -85,6 +91,8 @@ export const DEFAULT_INVOICE: InvoiceData = {
     showNotes: true,
     showTaxId: true,
   },
+  createdAt: '2026-10-15T10:00:00.000Z',
+  updatedAt: '2026-10-15T14:20:00.000Z',
 };
 
 export const SAMPLE_PRESETS: Array<{ id: string; name: string; subtitle: string; data: InvoiceData }> = [
@@ -118,8 +126,8 @@ export const SAMPLE_PRESETS: Array<{ id: string; name: string; subtitle: string;
       items: [
         {
           id: 'item-1',
-          description: 'Brand Identity System & Bi-Lingual Typography Guidelines',
-          scope: 'English & Ge\'ez font pairing, logo marks, digital stationery kit',
+          description: "Brand Identity System & Bi-Lingual Typography Guidelines",
+          scope: "English & Ge'ez font pairing, logo marks, digital stationery kit",
           quantity: 1,
           rate: 110000,
         },
@@ -140,11 +148,22 @@ export const SAMPLE_PRESETS: Array<{ id: string; name: string; subtitle: string;
       ],
       taxRate: 15, // Ethiopia VAT 15%
       discountRate: 0,
+      payment: {
+        ...DEFAULT_INVOICE.payment,
+        qrPayment: {
+          enabled: true,
+          provider: 'telebirr',
+          accountOrUrl: 'ETHDESIGN_MERCHANT_994',
+          note: 'Scan with Telebirr App to settle instant ETB transfer',
+        },
+      },
       customization: {
         ...DEFAULT_INVOICE.customization,
         template: 'compact-statement',
         typographyMode: 'space-grotesk',
       },
+      createdAt: '2026-10-10T09:15:00.000Z',
+      updatedAt: '2026-10-12T16:45:00.000Z',
     },
   },
   {
@@ -156,7 +175,7 @@ export const SAMPLE_PRESETS: Array<{ id: string; name: string; subtitle: string;
       id: 'ethio-inv-003',
       invoiceNumber: 'ETH-2026-104',
       currency: 'EUR',
-      status: 'PENDING',
+      status: 'OVERDUE',
       client: {
         name: 'Frederik Lindqvist',
         company: 'Nordic CleanStream Oy',
@@ -186,11 +205,76 @@ export const SAMPLE_PRESETS: Array<{ id: string; name: string; subtitle: string;
       ],
       taxRate: 0, // Cross-border EU reverse charge
       discountRate: 3,
+      payment: {
+        ...DEFAULT_INVOICE.payment,
+        qrPayment: {
+          enabled: true,
+          provider: 'paypal',
+          accountOrUrl: 'ethiodesign',
+          note: 'Scan to pay directly via PayPal Business checkout',
+        },
+      },
       customization: {
         ...DEFAULT_INVOICE.customization,
         template: 'agency-elegant',
         typographyMode: 'sans-clean',
       },
+      createdAt: '2026-09-28T11:20:00.000Z',
+      updatedAt: '2026-10-01T08:00:00.000Z',
+    },
+  },
+  {
+    id: 'brand-draft-usd',
+    name: 'Solaria AI Brand Sprint (Draft)',
+    subtitle: 'USD $6.2k · AI Identity Sprint',
+    data: {
+      ...DEFAULT_INVOICE,
+      id: 'ethio-inv-004',
+      invoiceNumber: 'ETH-2026-112',
+      currency: 'USD',
+      status: 'DRAFT',
+      client: {
+        name: 'Elena Rostova',
+        company: 'Solaria AI Foundation',
+        email: 'elena@solaria.ai',
+        phone: '+1 650 334 9912',
+        address: 'University Ave, Suite 300',
+        city: 'Palo Alto, CA 94301',
+        country: 'United States',
+        taxId: 'US-EIN-88-1928471',
+        poNumber: 'PO-SOL-09',
+      },
+      items: [
+        {
+          id: 'item-1',
+          description: 'Creative Direction & AI Visual System Guidelines',
+          scope: 'Generative typography, geometric 3D marks, color gradients',
+          quantity: 28,
+          rate: 135,
+        },
+        {
+          id: 'item-2',
+          description: 'Interactive Landing Page UI Design in Figma',
+          scope: 'Desktop & mobile responsive viewports with micro-interactions',
+          quantity: 18,
+          rate: 135,
+        },
+      ],
+      taxRate: 0,
+      discountRate: 0,
+      payment: {
+        ...DEFAULT_INVOICE.payment,
+        qrPayment: {
+          enabled: true,
+          provider: 'stripe',
+          accountOrUrl: 'https://buy.stripe.com/solaria_deposit',
+          note: 'Deposit required prior to vector source handoff',
+        },
+      },
+      createdAt: '2026-10-14T14:00:00.000Z',
+      updatedAt: '2026-10-14T14:30:00.000Z',
     },
   },
 ];
+
+export const INITIAL_INVOICES_COLLECTION: InvoiceData[] = SAMPLE_PRESETS.map((p) => p.data);

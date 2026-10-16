@@ -6,6 +6,16 @@ export type TypographyMode = 'space-grotesk' | 'sans-clean' | 'mono-code';
 
 export type CurrencyCode = 'USD' | 'EUR' | 'ETB' | 'GBP';
 
+export type QRPaymentProvider = 'stripe' | 'paypal' | 'telebirr' | 'bank' | 'custom_url';
+
+export interface QRPaymentConfig {
+  enabled: boolean;
+  provider: QRPaymentProvider;
+  accountOrUrl: string; // e.g. stripe link, paypal handle, telebirr merchant #, or IBAN
+  customPayload?: string;
+  note?: string;
+}
+
 export interface CurrencyConfig {
   code: CurrencyCode;
   symbol: string;
@@ -54,6 +64,7 @@ export interface PaymentDetails {
   telebirrNumber?: string;
   paymentTerms: string;
   notes: string;
+  qrPayment?: QRPaymentConfig;
 }
 
 export interface CustomizationSettings {
@@ -85,6 +96,8 @@ export interface InvoiceData {
   discountType: 'percentage' | 'fixed';
   payment: PaymentDetails;
   customization: CustomizationSettings;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export const CURRENCIES: Record<CurrencyCode, CurrencyConfig> = {

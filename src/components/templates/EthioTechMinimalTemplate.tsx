@@ -2,6 +2,7 @@ import React from 'react';
 import { InvoiceData, CURRENCIES } from '../../types/invoice';
 import { calculateInvoice, formatReadableDate } from '../../utils/calculations';
 import { EthioLogo } from '../EthioLogo';
+import { PaymentQRCodeBadge } from '../PaymentQRCodeBadge';
 
 interface TemplateProps {
   invoice: InvoiceData;
@@ -255,6 +256,10 @@ export const EthioTechMinimalTemplate: React.FC<TemplateProps> = ({ invoice }) =
                   )}
                 </div>
               </div>
+            )}
+
+            {invoice.payment.qrPayment?.enabled && (
+              <PaymentQRCodeBadge invoice={invoice} accentColor={accent} />
             )}
 
             {invoice.customization.showNotes && invoice.payment.notes && (

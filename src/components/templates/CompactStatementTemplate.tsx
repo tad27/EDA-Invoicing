@@ -2,6 +2,7 @@ import React from 'react';
 import { InvoiceData, CURRENCIES } from '../../types/invoice';
 import { calculateInvoice, formatReadableDate } from '../../utils/calculations';
 import { EthioLogo } from '../EthioLogo';
+import { PaymentQRCodeBadge } from '../PaymentQRCodeBadge';
 
 interface TemplateProps {
   invoice: InvoiceData;
@@ -202,6 +203,12 @@ export const CompactStatementTemplate: React.FC<TemplateProps> = ({ invoice }) =
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {invoice.payment.qrPayment?.enabled && (
+              <div className="pt-2">
+                <PaymentQRCodeBadge invoice={invoice} compact={true} accentColor={accent} />
               </div>
             )}
 
