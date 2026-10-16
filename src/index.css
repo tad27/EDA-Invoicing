@@ -44,41 +44,85 @@
   background: #4f4f4f;
 }
 
-/* Print optimizations */
+/* Screen visibility for print mount */
+.print-mount-container {
+  display: none;
+}
+
+/* Bulletproof Print Architecture */
 @media print {
+  /* 1. Page setup */
+  @page {
+    margin: 8mm;
+    size: auto;
+  }
+
+  /* 2. Global background and text color reset */
   html, body {
     background: #ffffff !important;
+    background-color: #ffffff !important;
     color: #000000 !important;
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  .no-print, header, aside, .editor-panel, .floating-actions, .mobile-toggle-bar {
+  /* 3. Hide the entire screen application shell and all non-print elements */
+  #app-root,
+  .no-print,
+  header,
+  nav,
+  aside,
+  main,
+  footer,
+  button,
+  .editor-panel,
+  .mobile-toggle-bar {
     display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
   }
 
-  .preview-container {
-    padding: 0 !important;
+  /* 4. Display ONLY the dedicated print mount */
+  .print-mount-container,
+  #print-mount {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
     margin: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
   }
 
+  .print-mount-container *,
+  #print-mount * {
+    visibility: visible !important;
+  }
+
+  /* 5. The invoice paper sheet inside print mount */
   .invoice-paper-sheet {
     box-shadow: none !important;
     border: none !important;
+    border-radius: 0 !important;
     margin: 0 !important;
-    padding: 24px !important;
+    padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
-    border-radius: 0 !important;
-  }
-
-  @page {
-    margin: 10mm;
-    size: auto;
+    transform: none !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
   }
 }

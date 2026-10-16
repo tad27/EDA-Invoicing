@@ -11,6 +11,7 @@ import { PaymentEditor } from './components/editor/PaymentEditor';
 import { CustomizationPanel } from './components/editor/CustomizationPanel';
 import { LandingPage } from './components/landing/LandingPage';
 import { InvoiceListPage } from './components/invoices/InvoiceListPage';
+import { PrintPreviewModal } from './components/PrintPreviewModal';
 import { calculateInvoice, generateInvoiceSummaryText } from './utils/calculations';
 import { downloadInvoiceJSON, importInvoiceJSON, copyTextToClipboard } from './utils/fileExport';
 import {
@@ -72,6 +73,7 @@ export default function App() {
   const [mobileStudioMode, setMobileStudioMode] = useState<'editor' | 'preview'>('editor');
   const [previewScale, setPreviewScale] = useState<number>(1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync collection to localStorage
@@ -87,7 +89,6 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem('eda_active_invoice', JSON.stringify(activeInvoice));
-      // Also update in collection if exists
       setInvoices((prev) =>
         prev.map((inv) => (inv.id === activeInvoice.id ? activeInvoice : inv))
       );
@@ -169,15 +170,20 @@ export default function App() {
     setCurrentView('studio');
   };
 
-  const handlePrint = (targetInvoice?: InvoiceData) => {
+  const handleOpenPrintPreview = (targetInvoice?: InvoiceData) => {
+    if (targetInvoice) {
+      setActiveInvoice(targetInvoice);
+    }
+    setIsPrintModalOpen(true);
+  };
+
+  const handleDirectPrint = (targetInvoice?: InvoiceData) => {
     if (targetInvoice && targetInvoice.id !== activeInvoice.id) {
       setActiveInvoice(targetInvoice);
-      setTimeout(() => {
-        window.print();
-      }, 150);
-    } else {
-      window.print();
     }
+    setTimeout(() => {
+      window.print();
+    }, 150);
   };
 
   const handleExportJSON = () => {
@@ -219,380 +225,420 @@ export default function App() {
   const calc = calculateInvoice(activeInvoice);
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white flex flex-col font-space selection:bg-[#3D5AFE]/30 selection:text-white">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#1A1A1A] border border-[#3D5AFE] text-white px-4 py-2.5 rounded-lg shadow-xl flex items-center gap-2.5 text-xs animate-in fade-in slide-in-from-bottom-2 duration-200 no-print">
-          <CheckCircle2 className="w-4 h-4 text-[#3D5AFE]" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+    <>
+      {/* 1. App Shell Viewport (Hidden during browser printing) */}
+      <div
+        id="app-root"
+        className="min-h-screen bg-[#000000] text-white flex flex-col font-space selection:bg-[#3D5AFE]/30 selection:text-white"
+      >
+        {/* Toast Notification */}
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 bg-[#1A1A1A] border border-[#3D5AFE] text-white px-4 py-2.5 rounded-lg shadow-xl flex items-center gap-2.5 text-xs animate-in fade-in slide-in-from-bottom-2 duration-200 no-print">
+            <CheckCircle2 className="w-4 h-4 text-[#3D5AFE]" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
 
-      {/* Hidden File Input for JSON import */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleImportJSON}
-        accept=".json"
-        className="hidden"
-      />
+        {/* Hidden File Input for JSON import */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleImportJSON}
+          accept=".json"
+          className="hidden"
+        />
 
-      {/* 1. TOP BAR (Conforming to Top Bar Contract) */}
-      <header className="no-print flex items-center justify-between gap-8 px-6 py-3.5 bg-[#000000] border-b border-[#1A1A1A] sticky top-0 z-40">
-        {/* Zone 1: Single text element Brand mark with EDA Invoicing logo */}
-        <button
-          type="button"
-          onClick={() => setCurrentView('landing')}
-          className="flex items-center gap-3 whitespace-nowrap shrink-0 cursor-pointer text-left focus:outline-none"
-        >
-          <EthioLogo
-            size="sm"
-            showWordmark={true}
-            wordmarkText="EDA Invoicing"
-            accentColor={activeInvoice.customization.themeAccent}
-          />
-        </button>
-
-        {/* Zone 2: 4 Single-line Nav Links */}
-        <nav className="hidden md:flex items-center gap-8 text-xs font-medium text-[#8A8785]">
+        {/* 1. TOP BAR */}
+        <header className="no-print flex items-center justify-between gap-8 px-6 py-3.5 bg-[#000000] border-b border-[#1A1A1A] sticky top-0 z-40">
+          {/* Zone 1: Brand Mark */}
           <button
             type="button"
             onClick={() => setCurrentView('landing')}
-            className={`transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-              currentView === 'landing' ? 'text-white font-semibold' : 'hover:text-white'
-            }`}
+            className="flex items-center gap-3 whitespace-nowrap shrink-0 cursor-pointer text-left focus:outline-none"
           >
-            Overview
+            <EthioLogo
+              size="sm"
+              showWordmark={true}
+              wordmarkText="EDA Invoicing"
+              accentColor={activeInvoice.customization.themeAccent}
+            />
           </button>
-          <button
-            type="button"
-            onClick={() => setCurrentView('list')}
-            className={`transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 ${
-              currentView === 'list' ? 'text-white font-semibold' : 'hover:text-white'
-            }`}
-          >
-            <span>Invoices</span>
-            <span className="text-[10px] px-1.5 py-0.2 bg-white/10 rounded-full font-mono">
-              {invoices.length}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setCurrentView('studio')}
-            className={`transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-              currentView === 'studio' ? 'text-white font-semibold' : 'hover:text-white'
-            }`}
-          >
-            Studio Builder
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setCurrentView('studio');
-              setStudioTab('payment');
-            }}
-            className="transition-colors whitespace-nowrap shrink-0 cursor-pointer hover:text-white"
-          >
-            QR Settlement
-          </button>
-        </nav>
 
-        {/* Zone 3: 1 Primary Action */}
-        <div className="flex items-center gap-3 shrink-0">
-          {currentView === 'studio' ? (
+          {/* Zone 2: Nav Links */}
+          <nav className="hidden md:flex items-center gap-8 text-xs font-medium text-[#8A8785]">
             <button
               type="button"
-              onClick={() => handlePrint()}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#3D5AFE] rounded-lg hover:bg-[#3D5AFE]/90 transition-all shadow-md active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
+              onClick={() => setCurrentView('landing')}
+              className={`transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                currentView === 'landing' ? 'text-white font-semibold' : 'hover:text-white'
+              }`}
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Export PDF / Print</span>
+              Overview
             </button>
-          ) : (
             <button
               type="button"
-              onClick={() => handleCreateNewInvoice()}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#3D5AFE] rounded-lg hover:bg-[#3D5AFE]/90 transition-all shadow-md active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
+              onClick={() => setCurrentView('list')}
+              className={`transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                currentView === 'list' ? 'text-white font-semibold' : 'hover:text-white'
+              }`}
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>New Invoice</span>
+              <span>Invoices</span>
+              <span className="text-[10px] px-1.5 py-0.2 bg-white/10 rounded-full font-mono">
+                {invoices.length}
+              </span>
             </button>
-          )}
-        </div>
-      </header>
+            <button
+              type="button"
+              onClick={() => setCurrentView('studio')}
+              className={`transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                currentView === 'studio' ? 'text-white font-semibold' : 'hover:text-white'
+              }`}
+            >
+              Studio Builder
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentView('studio');
+                setStudioTab('payment');
+              }}
+              className="transition-colors whitespace-nowrap shrink-0 cursor-pointer hover:text-white"
+            >
+              QR Settlement
+            </button>
+          </nav>
 
-      {/* 2. RENDER ACTIVE VIEW */}
-      {currentView === 'landing' && (
-        <LandingPage
-          onOpenStudio={(template) => {
-            if (template) {
-              setActiveInvoice((prev) => ({
-                ...prev,
-                customization: { ...prev.customization, template },
-              }));
-            }
-            setCurrentView('studio');
-          }}
-          onOpenList={() => setCurrentView('list')}
-        />
-      )}
-
-      {currentView === 'list' && (
-        <InvoiceListPage
-          invoices={invoices}
-          onSelectInvoice={handleSelectInvoice}
-          onCreateInvoice={handleCreateNewInvoice}
-          onUpdateInvoice={handleUpdateInvoice}
-          onDeleteInvoice={handleDeleteInvoice}
-          onCloneInvoice={handleCloneInvoice}
-          onPrintInvoice={(inv) => handlePrint(inv)}
-        />
-      )}
-
-      {currentView === 'studio' && (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Secondary Workspace Toolbar for Studio */}
-          <div className="no-print bg-[#1A1A1A] border-b border-white/5 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
-            {/* Left: Back to List + Active Invoice Info */}
-            <div className="flex items-center gap-3">
+          {/* Zone 3: Primary Action */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            {currentView === 'studio' ? (
               <button
                 type="button"
-                onClick={() => setCurrentView('list')}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[#8A8785] hover:text-white bg-[#000000] border border-white/10 hover:border-white/20 rounded-lg transition-colors cursor-pointer"
+                onClick={() => handleOpenPrintPreview()}
+                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#3D5AFE] rounded-lg hover:bg-[#3D5AFE]/90 transition-all shadow-md active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>All Invoices</span>
+                <Printer className="w-3.5 h-3.5" />
+                <span>Export PDF / Print</span>
               </button>
-
-              <div className="h-4 w-px bg-white/10" />
-
-              <div className="flex items-center gap-1.5 text-xs text-[#8A8785]">
-                <span className="font-semibold text-white">{activeInvoice.invoiceNumber}</span>
-                <span>·</span>
-                <span className="text-[#3D5AFE] font-medium">{calc.formattedGrandTotal}</span>
-                <span>·</span>
-                <span className="text-white/70">{activeInvoice.client.company}</span>
-              </div>
-            </div>
-
-            {/* Right: Actions Cluster */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleCopySummary}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[#8A8785] hover:text-white bg-[#000000] border border-white/10 hover:border-white/20 rounded-lg transition-colors cursor-pointer"
-                title="Copy plain text summary"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Copy Text</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleExportJSON}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[#8A8785] hover:text-white bg-[#000000] border border-white/10 hover:border-white/20 rounded-lg transition-colors cursor-pointer"
-                title="Download JSON backup"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Save JSON</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[#8A8785] hover:text-white bg-[#000000] border border-white/10 hover:border-white/20 rounded-lg transition-colors cursor-pointer"
-                title="Upload JSON"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Load JSON</span>
-              </button>
-
+            ) : (
               <button
                 type="button"
                 onClick={() => handleCreateNewInvoice()}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-white bg-[#3D5AFE] rounded-lg hover:bg-[#3D5AFE]/90 transition-colors cursor-pointer"
-                title="Create another invoice"
+                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#3D5AFE] rounded-lg hover:bg-[#3D5AFE]/90 transition-all shadow-md active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">New</span>
+                <span>New Invoice</span>
               </button>
+            )}
+          </div>
+        </header>
 
-              {/* Zoom Controls */}
-              <div className="hidden lg:flex items-center gap-1 ml-2 pl-2 border-l border-white/10 text-xs">
+        {/* 2. RENDER ACTIVE VIEW */}
+        {currentView === 'landing' && (
+          <LandingPage
+            onOpenStudio={(template) => {
+              if (template) {
+                setActiveInvoice((prev) => ({
+                  ...prev,
+                  customization: { ...prev.customization, template },
+                }));
+              }
+              setCurrentView('studio');
+            }}
+            onOpenList={() => setCurrentView('list')}
+          />
+        )}
+
+        {currentView === 'list' && (
+          <InvoiceListPage
+            invoices={invoices}
+            onSelectInvoice={handleSelectInvoice}
+            onCreateInvoice={handleCreateNewInvoice}
+            onUpdateInvoice={handleUpdateInvoice}
+            onDeleteInvoice={handleDeleteInvoice}
+            onCloneInvoice={handleCloneInvoice}
+            onPrintInvoice={(inv) => handleOpenPrintPreview(inv)}
+          />
+        )}
+
+        {currentView === 'studio' && (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Secondary Workspace Toolbar for Studio */}
+            <div className="no-print bg-[#1A1A1A] border-b border-white/5 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+              {/* Left: Back to List + Active Invoice Info */}
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setPreviewScale((s) => Math.max(0.7, s - 0.1))}
-                  className="p-1 text-[#8A8785] hover:text-white bg-[#000000] border border-white/10 rounded transition-colors"
-                  title="Zoom out"
+                  onClick={() => setCurrentView('list')}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[#8A8785] hover:text-white bg-[#000000] border border-white/10 hover:border-white/20 rounded-lg transition-colors cursor-pointer"
                 >
-                  <ZoomOut className="w-3.5 h-3.5" />
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>All Invoices</span>
                 </button>
-                <span className="text-[11px] font-mono text-[#8A8785] w-10 text-center">
-                  {Math.round(previewScale * 100)}%
-                </span>
+
+                <div className="h-4 w-px bg-white/10" />
+
+                <div className="flex items-center gap-1.5 text-xs text-[#8A8785]">
+                  <span className="font-semibold text-white">{activeInvoice.invoiceNumber}</span>
+                  <span>·</span>
+                  <span className="text-[#3D5AFE] font-medium">{calc.formattedGrandTotal}</span>
+                  <span>·</span>
+                  <span className="text-white/70">{activeInvoice.client.company}</span>
+                </div>
+              </div>
+
+              {/* Right: Actions Cluster */}
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setPreviewScale((s) => Math.min(1.2, s + 0.1))}
-                  className="p-1 text-[#8A8785] hover:text-white bg-[#000000] border border-white/10 rounded transition-colors"
-                  title="Zoom in"
+                  onClick={() => handleOpenPrintPreview()}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-white bg-[#3D5AFE]/20 border border-[#3D5AFE]/40 hover:bg-[#3D5AFE]/30 rounded-lg transition-colors cursor-pointer"
+                  title="Open Print & PDF Preview Modal"
                 >
-                  <ZoomIn className="w-3.5 h-3.5" />
+                  <Eye className="w-3.5 h-3.5 text-[#3D5AFE]" />
+                  <span>Print Preview</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={handleCopySummary}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[#8A8785] hover:text-white bg-[#000000] border border-white/10 hover:border-white/20 rounded-lg transition-colors cursor-pointer"
+                  title="Copy plain text summary"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Copy Text</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportJSON}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[#8A8785] hover:text-white bg-[#000000] border border-white/10 hover:border-white/20 rounded-lg transition-colors cursor-pointer"
+                  title="Download JSON backup"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Save JSON</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[#8A8785] hover:text-white bg-[#000000] border border-white/10 hover:border-white/20 rounded-lg transition-colors cursor-pointer"
+                  title="Upload JSON"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Load JSON</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleCreateNewInvoice()}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-white bg-[#3D5AFE] rounded-lg hover:bg-[#3D5AFE]/90 transition-colors cursor-pointer"
+                  title="Create another invoice"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">New</span>
+                </button>
+
+                {/* Zoom Controls */}
+                <div className="hidden lg:flex items-center gap-1 ml-2 pl-2 border-l border-white/10 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewScale((s) => Math.max(0.7, s - 0.1))}
+                    className="p-1 text-[#8A8785] hover:text-white bg-[#000000] border border-white/10 rounded transition-colors"
+                    title="Zoom out"
+                  >
+                    <ZoomOut className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-[11px] font-mono text-[#8A8785] w-10 text-center">
+                    {Math.round(previewScale * 100)}%
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewScale((s) => Math.min(1.2, s + 0.1))}
+                    className="p-1 text-[#8A8785] hover:text-white bg-[#000000] border border-white/10 rounded transition-colors"
+                    title="Zoom in"
+                  >
+                    <ZoomIn className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Mobile View Toggle Bar */}
-          <div className="no-print lg:hidden p-2 bg-[#000000] border-b border-white/10 flex items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => setMobileStudioMode('editor')}
-              className={`flex-1 py-1.5 text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
-                mobileStudioMode === 'editor'
-                  ? 'bg-[#3D5AFE] text-white shadow-sm'
-                  : 'bg-[#1A1A1A] text-[#8A8785]'
-              }`}
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Editor</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setMobileStudioMode('preview')}
-              className={`flex-1 py-1.5 text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
-                mobileStudioMode === 'preview'
-                  ? 'bg-[#3D5AFE] text-white shadow-sm'
-                  : 'bg-[#1A1A1A] text-[#8A8785]'
-              }`}
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>Live Preview</span>
-            </button>
-          </div>
+            {/* Mobile View Toggle Bar */}
+            <div className="no-print lg:hidden p-2 bg-[#000000] border-b border-white/10 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setMobileStudioMode('editor')}
+                className={`flex-1 py-1.5 text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
+                  mobileStudioMode === 'editor'
+                    ? 'bg-[#3D5AFE] text-white shadow-sm'
+                    : 'bg-[#1A1A1A] text-[#8A8785]'
+                }`}
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Editor</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileStudioMode('preview')}
+                className={`flex-1 py-1.5 text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
+                  mobileStudioMode === 'preview'
+                    ? 'bg-[#3D5AFE] text-white shadow-sm'
+                    : 'bg-[#1A1A1A] text-[#8A8785]'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>Live Preview</span>
+              </button>
+            </div>
 
-          {/* Split-Screen Studio Workspace */}
-          <main className="flex-1 flex overflow-hidden">
-            {/* LEFT COLUMN: THE BUILDER & EDITOR */}
-            <section
-              className={`editor-panel w-full lg:w-[480px] xl:w-[540px] shrink-0 border-r border-[#1A1A1A] bg-[#000000] flex flex-col overflow-y-auto ${
-                mobileStudioMode === 'editor' ? 'block' : 'hidden lg:flex'
-              }`}
-            >
-              {/* Studio Sub-Navigation Tabs */}
-              <div className="no-print sticky top-0 bg-[#000000] z-20 border-b border-white/10 px-4 py-2.5">
-                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-                  {[
-                    { id: 'items', label: 'Items', count: activeInvoice.items.length },
-                    { id: 'payment', label: 'Settlement & QR' },
-                    { id: 'customizer', label: 'Theme & Style' },
-                    { id: 'meta', label: 'Dates & Status' },
-                    { id: 'client', label: 'Client Profile' },
-                    { id: 'taxes', label: 'Taxes & Discount' },
-                  ].map((tab) => {
-                    const active = studioTab === tab.id;
-                    return (
+            {/* Split-Screen Studio Workspace */}
+            <main className="flex-1 flex overflow-hidden">
+              {/* LEFT COLUMN: THE BUILDER & EDITOR */}
+              <section
+                className={`editor-panel w-full lg:w-[480px] xl:w-[540px] shrink-0 border-r border-[#1A1A1A] bg-[#000000] flex flex-col overflow-y-auto ${
+                  mobileStudioMode === 'editor' ? 'block' : 'hidden lg:flex'
+                }`}
+              >
+                {/* Studio Sub-Navigation Tabs */}
+                <div className="no-print sticky top-0 bg-[#000000] z-20 border-b border-white/10 px-4 py-2.5">
+                  <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+                    {[
+                      { id: 'items', label: 'Items', count: activeInvoice.items.length },
+                      { id: 'payment', label: 'Settlement & QR' },
+                      { id: 'customizer', label: 'Theme & Style' },
+                      { id: 'meta', label: 'Dates & Status' },
+                      { id: 'client', label: 'Client Profile' },
+                      { id: 'taxes', label: 'Taxes & Discount' },
+                    ].map((tab) => {
+                      const active = studioTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setStudioTab(tab.id as any)}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
+                            active
+                              ? 'bg-[#3D5AFE] text-white shadow-sm'
+                              : 'text-[#8A8785] hover:text-white hover:bg-[#1A1A1A]'
+                          }`}
+                        >
+                          <span>{tab.label}</span>
+                          {tab.count !== undefined && (
+                            <span className="text-[10px] opacity-80 font-mono">({tab.count})</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Active Tab Editor Form */}
+                <div className="p-4 sm:p-6 space-y-5">
+                  {studioTab === 'items' && (
+                    <LineItemsEditor invoice={activeInvoice} onChange={setActiveInvoice} />
+                  )}
+
+                  {studioTab === 'payment' && (
+                    <PaymentEditor invoice={activeInvoice} onChange={setActiveInvoice} />
+                  )}
+
+                  {studioTab === 'customizer' && (
+                    <CustomizationPanel invoice={activeInvoice} onChange={setActiveInvoice} />
+                  )}
+
+                  {studioTab === 'meta' && (
+                    <InvoiceMetaEditor invoice={activeInvoice} onChange={setActiveInvoice} />
+                  )}
+
+                  {studioTab === 'client' && (
+                    <ClientAgencyEditor invoice={activeInvoice} onChange={setActiveInvoice} />
+                  )}
+
+                  {studioTab === 'taxes' && (
+                    <TaxDiscountEditor invoice={activeInvoice} onChange={setActiveInvoice} />
+                  )}
+                </div>
+              </section>
+
+              {/* RIGHT COLUMN: LIVE INVOICE PREVIEW CANVAS */}
+              <section
+                className={`flex-1 bg-[#121212] overflow-y-auto p-4 sm:p-8 flex flex-col items-center justify-start ${
+                  mobileStudioMode === 'preview' ? 'block' : 'hidden lg:flex'
+                }`}
+              >
+                {/* Template notice & quick template toggle */}
+                <div className="no-print w-full max-w-[850px] mb-4 flex items-center justify-between text-xs text-[#8A8785]">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#3D5AFE]" />
+                    <span className="text-white font-medium capitalize">
+                      {activeInvoice.customization.template.replace('-', ' ')}
+                    </span>
+                    <span>·</span>
+                    <span className="capitalize">
+                      {activeInvoice.customization.typographyMode.replace('-', ' ')}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    {(
+                      [
+                        { id: 'ethio-tech', label: 'Tech' },
+                        { id: 'agency-elegant', label: 'Elegant' },
+                        { id: 'compact-statement', label: 'Compact' },
+                      ] as const
+                    ).map((t) => (
                       <button
-                        key={tab.id}
+                        key={t.id}
                         type="button"
-                        onClick={() => setStudioTab(tab.id as any)}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
-                          active
-                            ? 'bg-[#3D5AFE] text-white shadow-sm'
-                            : 'text-[#8A8785] hover:text-white hover:bg-[#1A1A1A]'
+                        onClick={() =>
+                          setActiveInvoice((prev) => ({
+                            ...prev,
+                            customization: { ...prev.customization, template: t.id },
+                          }))
+                        }
+                        className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                          activeInvoice.customization.template === t.id
+                            ? 'bg-[#3D5AFE] text-white'
+                            : 'bg-[#1A1A1A] text-[#8A8785] hover:text-white'
                         }`}
                       >
-                        <span>{tab.label}</span>
-                        {tab.count !== undefined && (
-                          <span className="text-[10px] opacity-80 font-mono">({tab.count})</span>
-                        )}
+                        {t.label}
                       </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Active Tab Editor Form */}
-              <div className="p-4 sm:p-6 space-y-5">
-                {studioTab === 'items' && (
-                  <LineItemsEditor invoice={activeInvoice} onChange={setActiveInvoice} />
-                )}
-
-                {studioTab === 'payment' && (
-                  <PaymentEditor invoice={activeInvoice} onChange={setActiveInvoice} />
-                )}
-
-                {studioTab === 'customizer' && (
-                  <CustomizationPanel invoice={activeInvoice} onChange={setActiveInvoice} />
-                )}
-
-                {studioTab === 'meta' && (
-                  <InvoiceMetaEditor invoice={activeInvoice} onChange={setActiveInvoice} />
-                )}
-
-                {studioTab === 'client' && (
-                  <ClientAgencyEditor invoice={activeInvoice} onChange={setActiveInvoice} />
-                )}
-
-                {studioTab === 'taxes' && (
-                  <TaxDiscountEditor invoice={activeInvoice} onChange={setActiveInvoice} />
-                )}
-              </div>
-            </section>
-
-            {/* RIGHT COLUMN: LIVE INVOICE PREVIEW CANVAS */}
-            <section
-              className={`flex-1 bg-[#121212] overflow-y-auto p-4 sm:p-8 flex flex-col items-center justify-start ${
-                mobileStudioMode === 'preview' ? 'block' : 'hidden lg:flex'
-              }`}
-            >
-              {/* Template notice & quick template toggle */}
-              <div className="no-print w-full max-w-[850px] mb-4 flex items-center justify-between text-xs text-[#8A8785]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#3D5AFE]" />
-                  <span className="text-white font-medium capitalize">
-                    {activeInvoice.customization.template.replace('-', ' ')}
-                  </span>
-                  <span>·</span>
-                  <span className="capitalize">
-                    {activeInvoice.customization.typographyMode.replace('-', ' ')}
-                  </span>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  {(
-                    [
-                      { id: 'ethio-tech', label: 'Tech' },
-                      { id: 'agency-elegant', label: 'Elegant' },
-                      { id: 'compact-statement', label: 'Compact' },
-                    ] as const
-                  ).map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() =>
-                        setActiveInvoice((prev) => ({
-                          ...prev,
-                          customization: { ...prev.customization, template: t.id },
-                        }))
-                      }
-                      className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-                        activeInvoice.customization.template === t.id
-                          ? 'bg-[#3D5AFE] text-white'
-                          : 'bg-[#1A1A1A] text-[#8A8785] hover:text-white'
-                      }`}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                {/* Live Preview Paper */}
+                <InvoicePreview invoice={activeInvoice} scale={previewScale} />
+              </section>
+            </main>
+          </div>
+        )}
+      </div>
 
-              {/* Live Preview Paper */}
-              <InvoicePreview invoice={activeInvoice} scale={previewScale} />
-            </section>
-          </main>
-        </div>
-      )}
-    </div>
+      {/* 2. In-App Interactive Print Preview Modal */}
+      <PrintPreviewModal
+        invoice={activeInvoice}
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        onUpdateTemplate={(tpl) =>
+          setActiveInvoice((prev) => ({
+            ...prev,
+            customization: { ...prev.customization, template: tpl },
+          }))
+        }
+        onPrintNow={() => {
+          setIsPrintModalOpen(false);
+          setTimeout(() => {
+            window.print();
+          }, 150);
+        }}
+      />
+
+      {/* 3. Dedicated Print Mount (Only visible during @media print) */}
+      <div id="print-mount" className="print-mount-container" aria-hidden="true">
+        <InvoicePreview invoice={activeInvoice} scale={1} isPrint={true} />
+      </div>
+    </>
   );
 }
