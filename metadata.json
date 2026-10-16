@@ -1,0 +1,6 @@
+{
+  "name": "Ethio Design - Invoicing Platform",
+  "description": "Modern, dynamic invoicing platform and live template builder for Ethio Design agency.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

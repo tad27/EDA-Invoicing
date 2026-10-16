@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-signal-blue: #3D5AFE;
+    --color-black: #000000;
+    --color-off-black: #1A1A1A;
+    --color-white: #FFFFFF;
+    --color-off-white: #F5F5F0;
+    --color-gray-100: #E6E6E3;
+    --color-gray-400: #8A8785;
+  }
+
+  body {
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+}
+
+.font-space {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.font-mono-code {
+  font-family: 'Space Mono', monospace;
+}
+
+.font-sans-clean {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Custom scrollbar for clean dark UI */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4f4f4f;
+}
+
+/* Print optimizations */
+@media print {
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print, header, aside, .editor-panel, .floating-actions, .mobile-toggle-bar {
+    display: none !important;
+  }
+
+  .preview-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .invoice-paper-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 24px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+  }
+
+  @page {
+    margin: 10mm;
+    size: auto;
+  }
+}
