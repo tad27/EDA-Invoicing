@@ -12,6 +12,8 @@ import { CustomizationPanel } from './components/editor/CustomizationPanel';
 import { LandingPage } from './components/landing/LandingPage';
 import { InvoiceListPage } from './components/invoices/InvoiceListPage';
 import { PrintPreviewModal } from './components/PrintPreviewModal';
+import { PWAInstallButton } from './components/pwa/PWAInstallButton';
+import { OfflineIndicator } from './components/pwa/OfflineIndicator';
 import { calculateInvoice, generateInvoiceSummaryText } from './utils/calculations';
 import { downloadInvoiceJSON, importInvoiceJSON, copyTextToClipboard } from './utils/fileExport';
 import {
@@ -231,7 +233,8 @@ export default function App() {
         id="app-root"
         className="min-h-screen bg-[#000000] text-white flex flex-col font-space selection:bg-[#3D5AFE]/30 selection:text-white"
       >
-        {/* Toast Notification */}
+        {/* Toast Notification & Offline Indicator */}
+        <OfflineIndicator />
         {toastMessage && (
           <div className="fixed bottom-6 right-6 z-50 bg-[#1A1A1A] border border-[#3D5AFE] text-white px-4 py-2.5 rounded-lg shadow-xl flex items-center gap-2.5 text-xs animate-in fade-in slide-in-from-bottom-2 duration-200 no-print">
             <CheckCircle2 className="w-4 h-4 text-[#3D5AFE]" />
@@ -308,8 +311,9 @@ export default function App() {
             </button>
           </nav>
 
-          {/* Zone 3: Primary Action */}
+          {/* Zone 3: Primary Action & PWA Install */}
           <div className="flex items-center gap-2.5 shrink-0">
+            <PWAInstallButton />
             {currentView === 'studio' ? (
               <button
                 type="button"

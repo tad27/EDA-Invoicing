@@ -102,6 +102,10 @@ export const LandingPage: React.FC<Props> = ({ onOpenStudio, onOpenList }) => {
               <CheckCircle2 className="w-3.5 h-3.5 text-[#3D5AFE]" />
               <span>Zero-Clutter PDF Print</span>
             </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#3D5AFE]" />
+              <span>Installable PWA (iPhone / Android)</span>
+            </div>
           </div>
         </div>
 
