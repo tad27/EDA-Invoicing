@@ -1,4 +1,5 @@
 {
+  "name": "eda-invoicing",
   "framework": "vite",
   "rewrites": [
     {
